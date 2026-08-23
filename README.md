@@ -26,6 +26,29 @@ module "batch_job_revision" {
 }
 ```
 
+## Provider configuration
+
+This module does not declare its own `provider` block — the caller supplies it. That keeps the
+module usable with `count`, `for_each` and `depends_on`, which Terraform forbids for modules
+carrying their own provider configuration.
+
+Configure the AWS provider in your root module, and use `default_tags` there if you want tags
+applied across every resource:
+
+```hcl
+provider "aws" {
+  region = "eu-west-1"
+
+  default_tags {
+    tags = {
+      Admin-Environment   = "prod"
+      Admin-ServiceDomain = "payments"
+      Team                = "infra-team"
+    }
+  }
+}
+```
+
 ## Requirements
 
 | Name | Version |
