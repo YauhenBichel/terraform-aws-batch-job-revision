@@ -1,57 +1,70 @@
-# Terraform module for AWS Batch Job Revision creating
+# Terraform AWS AWS Batch Job Revision
 
-## Author is Yauhen Bichel
+[![Terraform Registry](https://img.shields.io/badge/Terraform-Registry-7B42BC?logo=terraform&logoColor=white)](https://registry.terraform.io/modules/YauhenBichel/batch-job-revision/aws/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## How to use 
+Creates a new revision of an AWS Batch job definition — Fargate or EC2, with configurable vCPU, memory, image and IAM roles. Registering a new revision on each deploy keeps previous revisions intact so a rollback is a one-line change.
 
-```
+## Usage
 
-module "aws_batch_job_revision" {
-  source                                      = "./modules/aws_batch_job_revision"
+```hcl
+module "batch_job_revision" {
+  source  = "YauhenBichel/batch-job-revision/aws"
+  version = "1.0.0"
 
-  aws_region                                  = var.aws_region
-  env                                         = var.env
-  service_domain                              = var.service_domain
+  env                 = "prod"
+  service_domain      = "payments"
+  team                = "infra-team"
+  aws_region          = "eu-west-1"
 
-  job_definition_name                         = var.aws_batch_job_job_definition_name
-  image_name                                  = var.aws_batch_job_revision_image_name
-  execution_role                              = var.aws_batch_job_revision_execution_role
-  execution_role_arn                          = var.aws_batch_job_revision_execution_role_arn
-
-  job_revision_type                           = var.aws_batch_job_revision_type
-  platform_capability                         = var.aws_batch_job_revision_platform_capability
-  vcpu                                        = var.aws_batch_job_revision_vcpu
-  memory                                      = var.aws_batch_job_revision_memory
-  fargate_platform_version                    = var.aws_batch_job_fargate_platform_version
-  fargate_platform_operating_system_family    = var.aws_batch_job_fargate_platform_operating_system_family
-  fargate_platform_cpu_architecture           = var.aws_batch_job_fargate_platform_cpu_architecture
-  assign_public_ip                            = var.aws_batch_job_assign_public_ip
-  job_command                                 = var.aws_batch_job_revision_command
-  environment_variables_list                  = var.aws_batch_job_revision_environment_variables_list
-  secrets_list                                = var.aws_batch_job_revision_secrets_list
-  execution_timeout                           = var.aws_batch_job_revision_execution_timeout
-  retry_attempts                              = var.aws_batch_job_revision_retry_attempts
-
-  load_date                                   = var.load_date
-  load_date_default_enabled                   = var.load_date_default_enabled
-
-  additional_tags = {
-    Environment = var.env
-    Project     = var.project_name
-    Team        = var.team
-  }
+  job_definition_name = "nightly-reconciliation"
+  image_name          = "123456789012.dkr.ecr.eu-west-1.amazonaws.com/recon:1.4.2"
+  platform_capability = "FARGATE"
+  vcpu                = "0.5"
+  memory              = "1024"
+  execution_role_arn  = aws_iam_role.batch_execution.arn
 }
-
 ```
 
-## Terratest Tests
+## Requirements
 
->go mod init batch-job-definition-tests
+| Name | Version |
+|---|---|
+| terraform | >= 1.0 |
+| aws provider | >= 4.0 |
 
->go get github.com/gruntwork-io/terratest
+## Inputs
 
->go get github.com/stretchr/testify
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `env` | `string` | — | Environment being deployed, e.g. `dev`, `prod` |
+| `service_domain` | `string` | — | Namespaces deployments in a shared account |
+| `team` | `string` | `infra-team` | Owning team, applied as a tag |
+| `aws_region` | `string` | `eu-west-1` | Target region |
+| `job_definition_name` | `string` | — | Name of the AWS Batch job definition |
+| `job_revision_type` | `string` | `container` | Type of the batch job revision |
+| `platform_capability` | `string` | `FARGATE` | `FARGATE` or `EC2` |
+| `image_name` | `string` | — | Container image for the job |
+| `vcpu` | `string` | `0.25` | vCPUs allocated |
+| `memory` | `string` | `512` | Memory in MB |
+| `execution_role_arn` | `string` | — | Execution role ARN |
 
->go mod tidy
+A dash in the Default column means the input is required.
 
->go test -v
+## Outputs
+
+| Name | Description |
+|---|---|
+| `job_definition_arn` | ARN of the new job definition revision |
+| `job_definition_name` | Name of the job definition |
+| `job_definition_revision` | Revision number just registered |
+| `job_definition_tags` | Tags applied to the revision |
+
+## Contributing
+
+Issues and pull requests are welcome. Please open an issue describing the problem before
+sending a large change.
+
+## Licence
+
+[MIT](LICENSE) — Yauhen Bichel
