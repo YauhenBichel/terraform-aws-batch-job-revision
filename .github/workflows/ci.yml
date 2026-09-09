@@ -1,0 +1,43 @@
+name: CI
+
+# Two cheap checks, both of which this repository has needed.
+#
+# `terraform validate` catches syntax and type errors. It does not read the
+# README, which is why the usage example could ask for nine inputs while the
+# module required eleven; check_readme_example.py closes that gap.
+#
+# The terratest under tests/ is not run here on purpose. It applies real
+# infrastructure and reads a plan, so it needs AWS credentials and costs money.
+# A gate that has to be skipped in practice is worse than no gate.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# One run per branch at a time. Cancelling applies to pull requests only, so a
+# push to main is never killed part-way through.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+
+      - name: terraform validate
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+      - name: The README example sets every required variable
+        run: python3 scripts/check_readme_example.py

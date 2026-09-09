@@ -10,7 +10,7 @@ Creates a new revision of an AWS Batch job definition — Fargate or EC2, with c
 ```hcl
 module "batch_job_revision" {
   source  = "YauhenBichel/batch-job-revision/aws"
-  version = "1.0.0"
+  version = "1.1.0"
 
   env                 = "prod"
   service_domain      = "payments"
@@ -22,6 +22,11 @@ module "batch_job_revision" {
   platform_capability = "FARGATE"
   vcpu                = "0.5"
   memory              = "1024"
+
+  # Two different roles, one letter apart. execution_role is the job role the
+  # container assumes; execution_role_arn is the role Batch itself uses to
+  # pull the image and write logs.
+  execution_role      = aws_iam_role.batch_job.arn
   execution_role_arn  = aws_iam_role.batch_execution.arn
 }
 ```
@@ -54,25 +59,48 @@ provider "aws" {
 | Name | Version |
 |---|---|
 | terraform | >= 1.0 |
-| aws provider | >= 4.0 |
+| aws provider | ~> 6.0 |
 
 ## Inputs
 
 | Name | Type | Default | Description |
 |---|---|---|---|
-| `env` | `string` | — | Environment being deployed, e.g. `dev`, `prod` |
+| `env` | `string` | — | Environment being deployed to |
 | `service_domain` | `string` | — | Namespaces deployments in a shared account |
-| `team` | `string` | `infra-team` | Owning team, applied as a tag |
+| `job_definition_name` | `string` | — | Name of the Batch job definition |
+| `image_name` | `string` | — | Container image URI |
+| `execution_role` | `string` | — | **Job role.** The role the container assumes at run time (`jobRoleArn`) |
+| `execution_role_arn` | `string` | — | **Execution role.** The role Batch uses to pull the image and write logs (`executionRoleArn`) |
+| `team` | `string` | `infra-team` | Owning team |
 | `aws_region` | `string` | `eu-west-1` | Target region |
-| `job_definition_name` | `string` | — | Name of the AWS Batch job definition |
-| `job_revision_type` | `string` | `container` | Type of the batch job revision |
+| `job_revision_type` | `string` | `container` | Job definition type |
 | `platform_capability` | `string` | `FARGATE` | `FARGATE` or `EC2` |
-| `image_name` | `string` | — | Container image for the job |
-| `vcpu` | `string` | `0.25` | vCPUs allocated |
-| `memory` | `string` | `512` | Memory in MB |
-| `execution_role_arn` | `string` | — | Execution role ARN |
+| `vcpu` | `string` | `0.25` | vCPU reservation |
+| `memory` | `string` | `512` | Memory reservation in MiB |
+| `fargate_platform_version` | `string` | `LATEST` | Fargate platform version |
+| `fargate_platform_operating_system_family` | `string` | `LINUX` | Runtime OS family |
+| `fargate_platform_cpu_architecture` | `string` | `X86_64` | Runtime CPU architecture |
+| `assign_public_ip` | `string` | `ENABLED` | Whether the task gets a public IP |
+| `job_command` | `list(string)` | `[]` | Overrides the image command |
+| `environment_variables_list` | `list(object)` | `[]` | Environment variables, each `{ name, value }`. An empty `value` falls back, see below |
+| `secrets_list` | `list(object)` | `[]` | Secrets, each `{ name, valueFrom }`, resolved from Parameter Store or Secrets Manager |
+| `execution_timeout` | `number` | `3600` | Job timeout in seconds |
+| `retry_attempts` | `number` | `1` | Retry attempts |
+| `additional_tags` | `map(string)` | `{}` | Extra tags merged onto the job definition |
+| `load_date` | `string` | `""` | Value used for the `LOAD_DATE` fallback |
+| `load_date_default_enabled` | `bool` | `false` | `true` makes `LOAD_DATE` available as a fallback value |
 
 A dash in the Default column means the input is required.
+
+### Empty environment variables fall back
+
+An entry in `environment_variables_list` whose `value` is `""` is filled from a
+small set of computed values instead. `CREATED_AT` is one of them, and it is
+built from `timestamp()`, which Terraform evaluates on every plan. So an entry
+named `CREATED_AT` with an empty value shows a change on every single plan,
+whether or not anything else moved. Give it a real value if you do not want
+that. `LOAD_DATE` is the other, and only when `load_date_default_enabled` is
+`true`.
 
 ## Outputs
 
@@ -93,14 +121,6 @@ sending a large change.
 [MIT](LICENSE) — Yauhen Bichel
 
 ---
-
-## Contributors
-
-Thank you to everyone who has helped this project. Your code, reviews, issues, and pull requests are appreciated.
-
-- [@YauhenBichel](https://github.com/YauhenBichel)
-
-See the [full contributor graph](https://github.com/YauhenBichel/terraform-aws-batch-job-revision/graphs/contributors).
 
 ## Contributors
 

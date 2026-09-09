@@ -57,7 +57,8 @@ func TestTerraformInit(t *testing.T) {
 
 	terraform.Init(t, terraformOptions)
 
-	assert.True(t, true, "Validates that Terraform can initialize")
+	// terraform.Init fails the test itself when init errors, so there is
+	// nothing left to assert here. assert.True(t, true) could not fail.
 }
 
 func TestBatchJobDefinitionBasicConfiguration(t *testing.T) {
