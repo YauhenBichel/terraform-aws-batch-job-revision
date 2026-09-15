@@ -145,6 +145,7 @@ variable "load_date" {
 }
 
 variable "load_date_default_enabled" {
+  default     = false
   description = "Enable default date (today and now) for LOAD_DATE: if false, then LOAD_DATE value is empty string"
   type = bool
 }
