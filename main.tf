@@ -6,13 +6,29 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = ">= 0.9"
+    }
+  }
+}
+
+# timestamp() changes on every run, so using it here registered a new revision on every apply.
+# This value only changes when an input that defines the revision changes.
+resource "time_static" "created_at" {
+  triggers = {
+    job_definition_name = var.job_definition_name
+    image_name          = var.image_name
+    vcpu                = var.vcpu
+    memory              = var.memory
+    environment         = jsonencode(var.environment_variables_list)
   }
 }
 
 locals {
   fallback_variables = merge(
     {
-      "CREATED_AT"            = formatdate("YYYY-MM-DD'T'HH:mm:ss", timestamp())
+      "CREATED_AT"            = formatdate("YYYY-MM-DD'T'HH:mm:ss", time_static.created_at.rfc3339)
     },
     var.load_date_default_enabled ? 
     {
