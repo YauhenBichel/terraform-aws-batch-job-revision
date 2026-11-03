@@ -95,12 +95,11 @@ A dash in the Default column means the input is required.
 ### Empty environment variables fall back
 
 An entry in `environment_variables_list` whose `value` is `""` is filled from a
-small set of computed values instead. `CREATED_AT` is one of them, and it is
-built from `timestamp()`, which Terraform evaluates on every plan. So an entry
-named `CREATED_AT` with an empty value shows a change on every single plan,
-whether or not anything else moved. Give it a real value if you do not want
-that. `LOAD_DATE` is the other, and only when `load_date_default_enabled` is
-`true`.
+small set of computed values instead. `CREATED_AT` is one of them: the time
+the job definition name, image, vCPU, memory or environment list last changed,
+held by a `time_static` resource. So it stays the same between plans, and it
+does not by itself register a new revision. `LOAD_DATE` is the other, and only
+when `load_date_default_enabled` is `true`.
 
 ## Outputs
 
@@ -110,6 +109,7 @@ that. `LOAD_DATE` is the other, and only when `load_date_default_enabled` is
 | `job_definition_name` | Name of the job definition |
 | `job_definition_revision` | Revision number just registered |
 | `job_definition_tags` | Tags applied to the revision |
+| `created_at` | When the inputs that define this revision last changed (RFC 3339) |
 
 ## Contributing
 
